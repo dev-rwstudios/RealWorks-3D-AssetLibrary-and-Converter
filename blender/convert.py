@@ -36,8 +36,13 @@ def my_print(*args):
     DEBUG_LOG.flush()
 
 def call_ai_universal(provider, api_key, model, url, prompt_text, b64_images=[]):
-    import urllib.request, urllib.error, json, time
+    import urllib.request, urllib.error, json, time, ssl
     max_retries = 3
+    
+    # Disable SSL verification for Blender's internal Python on Linux
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     
     for attempt in range(max_retries):
         try:
@@ -91,7 +96,7 @@ def call_ai_universal(provider, api_key, model, url, prompt_text, b64_images=[])
                 }
                 req = urllib.request.Request(endpoint, data=json.dumps(payload).encode('utf-8'), headers=headers)
             
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, context=ctx) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
                 llm_text = ""
                 if provider == "Google Gemini":
@@ -713,7 +718,8 @@ def collect_textures_for_objects(objects, dest_folder, input_dir):
                     abs_path = bpy.path.abspath(img.filepath)
                 
                 if not os.path.exists(abs_path):
-                    basename = os.path.basename(img.filepath.replace('\\\\', '/'))
+                    # Replace single backslashes with forward slashes for Linux compatibility
+                    basename = os.path.basename(img.filepath.replace('\\', '/'))
                     alts = [
                         os.path.join(input_dir, basename),
                         os.path.join(input_dir, "Textures", basename),
@@ -726,12 +732,12 @@ def collect_textures_for_objects(objects, dest_folder, input_dir):
                             break
                             
                 if os.path.exists(abs_path):
-                    filename = os.path.basename(abs_path)
+                    filename = os.path.basename(abs_path.replace('\\', '/'))
                     new_path = os.path.join(dest_folder, filename)
                     try:
                         import shutil
                         shutil.copy2(abs_path, new_path)
-                        img.filepath = "//" + os.path.join("textures", filename).replace("\\\\", "/")
+                        img.filepath = "//" + os.path.join("textures", filename).replace('\\', '/')
                         copied_count += 1
                     except Exception:
                         pass
