@@ -220,7 +220,7 @@ function Sidebar() {
   ];
 
 
-  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({ "Categories": true });
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({ "Categories": true, "Tags": true });
 
   const toggleCat = (catName: string) => {
     setExpandedCats(prev => ({ ...prev, [catName]: !prev[catName] }));
@@ -325,10 +325,10 @@ function Sidebar() {
           <div className="mb-6">
             <h3 
               onClick={() => toggleCat('Categories')}
-              className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 flex items-center justify-between cursor-pointer hover:text-neutral-300 transition-colors group"
+              className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 cursor-pointer hover:text-neutral-300 transition-colors group"
             >
-              Categories
               <ChevronRight className={cn("w-3 h-3 transition-transform group-hover:text-neutral-400", expandedCats['Categories'] && "rotate-90")} />
+              Categories
             </h3>
             {expandedCats['Categories'] && (
               <ul className="space-y-0.5">
@@ -352,32 +352,35 @@ function Sidebar() {
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+            <h3 
+              className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 cursor-pointer hover:text-neutral-300 transition-colors group"
+              onClick={() => toggleCat('Tags')}
+            >
+              <ChevronRight className={cn("w-3 h-3 transition-transform group-hover:text-neutral-400", expandedCats['Tags'] && "rotate-90")} />
               Tags
-              <ChevronDown className="w-3 h-3" />
             </h3>
-            <div className="flex flex-wrap gap-1 items-center">
-            
-              {availableTags.map(tag => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button 
-                    key={tag} 
-                    onClick={() => setSelectedTags(isSelected ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag])}
-                    className={cn(
-                      "h-5 px-1.5 inline-flex items-center justify-center text-[10px] border rounded transition-colors",
-                      isSelected 
-                        ? "bg-[#0066cc]/20 text-blue-400 border-blue-500/50" 
-                        : "bg-[#222] text-neutral-400 border-[#333] hover:border-[#555] hover:text-neutral-200"
-                    )}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-              {!isAddingTag ? (
-                <button
-                  onClick={() => setIsAddingTag(true)}
+            {expandedCats['Tags'] && (
+              <div className="flex flex-wrap gap-1 items-center">
+                {availableTags.map(tag => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button 
+                      key={tag} 
+                      onClick={() => setSelectedTags(isSelected ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag])}
+                      className={cn(
+                        "h-5 px-1.5 inline-flex items-center justify-center text-[10px] border rounded transition-colors",
+                        isSelected 
+                          ? "bg-[#0066cc]/20 text-blue-400 border-blue-500/50" 
+                          : "bg-[#222] text-neutral-400 border-[#333] hover:border-[#555] hover:text-neutral-200"
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+                {!isAddingTag ? (
+                  <button
+                    onClick={() => setIsAddingTag(true)}
                   className="w-5 h-5 flex items-center justify-center rounded border border-dashed border-[#555] bg-transparent hover:bg-[#333] hover:border-solid text-neutral-500 hover:text-white transition-all flex-shrink-0"
                   title="Create new tag"
                 >
@@ -391,8 +394,13 @@ function Sidebar() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && newTag.trim()) {
-                      const tags = newTag.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                      tags.forEach(t => addAvailableTag(t));
+                      const rawTags = newTag.split(',').map(t => t.trim()).filter(Boolean);
+                      rawTags.forEach(rawTag => {
+                        const existingAvailable = availableTags.find(t => t.toLowerCase() === rawTag.toLowerCase());
+                        if (!existingAvailable) {
+                          addAvailableTag(rawTag);
+                        }
+                      });
                       setNewTag("");
                       setIsAddingTag(false);
                     } else if (e.key === 'Escape') {
@@ -408,7 +416,8 @@ function Sidebar() {
                   placeholder="new tag"
                 />
               )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

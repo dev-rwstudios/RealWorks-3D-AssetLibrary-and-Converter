@@ -147,7 +147,7 @@ fn get_settings(state: State<AppState>) -> Settings {
 fn save_settings(settings: Settings, state: State<AppState>) -> Result<(), String> {
     let conn = state.db.lock().unwrap();
     conn.execute(
-        "UPDATE settings SET blender_path = ?1, library_path = ?2, debug_blend_path = ?3, gemini_api_key = ?4, ai_provider = ?5, ai_model = ?6, ai_url = ?7 WHERE id = 1",
+        "INSERT OR REPLACE INTO settings (id, blender_path, library_path, debug_blend_path, gemini_api_key, ai_provider, ai_model, ai_url) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![settings.blender_path, settings.library_path, settings.debug_blend_path, settings.gemini_api_key, settings.ai_provider, settings.ai_model, settings.ai_url],
     )
     .map_err(|e| e.to_string())?;

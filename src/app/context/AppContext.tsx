@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -65,13 +65,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedCategory, setSelectedCategory] = useState("All assets");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
-  const [availableTags, setAvailableTags] = useState<string[]>(["interior", "exterior", "modern", "vintage", "organic", "hard-surface", "rigged"]);
+  const [manualTags, setManualTags] = useState<string[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   const queue = assets.filter(a => a.status === "Queued");
   const processing = assets.filter(a => a.status === "Processing");
+
+  const availableTags = useMemo(() => {
+    const unique = new Set(manualTags);
+    assets.forEach(a => {
+      if (a.tags) {
+        a.tags.forEach(t => unique.add(t));
+      }
+    });
+    return Array.from(unique).sort();
+  }, [assets, manualTags]);
 
   const addLog = (assetName: string, severity: "Info" | "Warning" | "Error", message: string) => {
     const entry: LogEntry = {
@@ -246,7 +256,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addAvailableTag = (tag: string) => {
     if (!availableTags.includes(tag)) {
-      setAvailableTags(prev => [...prev, tag]);
+      setManualTags(prev => [...prev, tag]);
     }
   };
 

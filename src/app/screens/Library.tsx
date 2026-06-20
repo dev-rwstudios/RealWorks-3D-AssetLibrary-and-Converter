@@ -82,7 +82,7 @@ const getVisibleTagsCount = (tags: string[], maxWidth: number = 155) => {
 
 export function Library() {
   const [sortBy, setSortBy] = useState<"recent" | "modified" | "all">("all");
-  const { assets, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, selectedTags, setSelectedTags, deleteAsset } = useAppContext();
+  const { assets, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, selectedTags, setSelectedTags, deleteAsset, availableTags, addAvailableTag, updateAssetTags } = useAppContext();
   const libraryAssets = assets.filter(a => {
     if (a.status !== "Library") return false;
 
@@ -93,8 +93,17 @@ export function Library() {
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      if (!a.name.toLowerCase().includes(query) && !a.category.toLowerCase().includes(query)) return false;
+      const tokens = searchQuery.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      
+      const matchesAllTokens = tokens.every(token => {
+        const inName = a.name.toLowerCase().includes(token);
+        const inCategory = a.category.toLowerCase().includes(token);
+        const inTags = a.tags.some(tag => tag.toLowerCase().includes(token));
+        
+        return inName || inCategory || inTags;
+      });
+      
+      if (!matchesAllTokens) return false;
     }
 
     if (selectedCategory !== "All assets") {
@@ -121,7 +130,6 @@ export function Library() {
   const [openTagManagerId, setOpenTagManagerId] = useState<string | null>(null);
   const [newTagInput, setNewTagInput] = useState("");
   const [textureFiles, setTextureFiles] = useState<string[]>([]);
-  const { availableTags, addAvailableTag, updateAssetTags } = useAppContext();
   const popoverRef = useRef<HTMLDivElement>(null);
   
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -745,14 +753,20 @@ function AssetTagsManager({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newTagInput?.trim()) {
                   e.preventDefault();
-                  const inputTags = newTagInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+                  const inputTags = newTagInput.split(',').map(t => t.trim()).filter(t => t);
                   const newTags = [...asset.tags];
                   let changed = false;
 
-                  inputTags.forEach(tag => {
-                    addAvailableTag(tag);
-                    if (!newTags.includes(tag)) {
-                      newTags.push(tag);
+                  inputTags.forEach(rawTag => {
+                    const existingAvailable = availableTags.find(t => t.toLowerCase() === rawTag.toLowerCase());
+                    const tagToUse = existingAvailable || rawTag;
+                    
+                    if (!existingAvailable) {
+                      addAvailableTag(tagToUse);
+                    }
+                    
+                    if (!newTags.some(t => t.toLowerCase() === tagToUse.toLowerCase())) {
+                      newTags.push(tagToUse);
                       changed = true;
                     }
                   });
